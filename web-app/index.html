@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#eef7f1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <title>Nông Trại Thông Minh</title>
+
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Thư viện Supabase JS v2 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <!-- Khung ScrollView mượt toàn ứng dụng -->
+  <div class="app-scroll-view" id="app-scroll">
+    <main class="app-container">
+
+      <!-- 1. THANH NGÀY GIỜ & TRẠNG THÁI HỆ THỐNG -->
+      <header class="top-header">
+        <div class="datetime-group">
+          <div class="datetime-row">
+            <svg class="hdr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="3"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <span id="current-date">--/--/----</span>
+          </div>
+          <div class="datetime-row time-sub">
+            <svg class="hdr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"></circle>
+              <polyline points="12 7 12 12 15 14"></polyline>
+            </svg>
+            <span id="current-time">-- : -- : --</span>
+          </div>
+        </div>
+
+        <div class="status-stack">
+          <div class="status-pill connected" id="connection-badge">
+            <span class="status-dot"></span>
+            <span id="connection-text">Đã kết nối</span>
+          </div>
+          <div class="pump-pill" id="pump-badge">
+            <span class="pump-dot"></span>
+            <span id="pump-text">Bơm: Đang tắt</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- 2. NHÂN VẬT CÂY XANH TRUNG TÂM -->
+      <section class="mascot-section" aria-hidden="true">
+        <div class="tree-halo">
+          <div class="tree-wrapper" id="tree-mascot">
+            <svg class="tree-svg" viewBox="0 0 180 165" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <ellipse cx="90" cy="153" rx="44" ry="6" fill="#639a55" opacity="0.28"/>
+              <path d="M81 95 C81 118, 76 138, 63 151 L117 151 C104 138, 99 118, 99 95 Z" fill="#8d5b3c" stroke="#3d2c22" stroke-width="3.5" stroke-linejoin="round"/>
+              <path d="M86 105 C86 122, 83 136, 75 148" stroke="#3d2c22" stroke-width="2.5" stroke-linecap="round"/>
+              <path d="M94 108 C94 124, 97 137, 104 148" stroke="#3d2c22" stroke-width="2.5" stroke-linecap="round"/>
+              <path d="M81 104 L67 90" stroke="#3d2c22" stroke-width="4" stroke-linecap="round"/>
+              <path d="M99 102 L113 88" stroke="#3d2c22" stroke-width="4" stroke-linecap="round"/>
+              <path d="M56 151 C54 143, 60 140, 63 148 C65 141, 71 142, 70 151 Z" fill="#77b836" stroke="#3d2c22" stroke-width="2.5" stroke-linejoin="round"/>
+              <path d="M111 151 C110 142, 116 141, 118 148 C121 140, 127 143, 125 151 Z" fill="#77b836" stroke="#3d2c22" stroke-width="2.5" stroke-linejoin="round"/>
+              <path d="M52 94 C34 92, 28 72, 42 59 C36 42, 52 26, 70 31 C80 18, 102 18, 112 31 C130 26, 146 42, 140 59 C154 72, 148 92, 130 94 C122 103, 105 104, 90 101 C75 104, 58 103, 52 94 Z" fill="#89c934" stroke="#3d2c22" stroke-width="3.5" stroke-linejoin="round"/>
+              <circle cx="129" cy="48" r="8" fill="#a8e048" stroke="#3d2c22" stroke-width="3"/>
+              <circle cx="43" cy="76" r="7" fill="#a8e048" stroke="#3d2c22" stroke-width="3"/>
+              <circle cx="72" cy="36" r="4.5" fill="#bce868"/>
+              <path d="M67 63 Q73 55 79 63" stroke="#2d241e" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+              <path d="M101 63 Q107 55 113 63" stroke="#2d241e" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+              <path d="M84 62 Q90 73 96 62 Z" fill="#2d241e" stroke="#2d241e" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M86 66 Q90 69 94 66" stroke="#ff7b7b" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. CẶP THẺ CHỈ SỐ REALTIME CÙNG TONE MÀU -->
+      <section class="sensor-grid">
+        <div class="sensor-card temp-card">
+          <div class="sensor-card-top">
+            <div class="sensor-icon-badge temp-badge">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"></path>
+                <line x1="17" y1="6" x2="19.5" y2="6"></line>
+                <line x1="17" y1="10" x2="19.5" y2="10"></line>
+              </svg>
+            </div>
+            <span class="sensor-label">Nhiệt độ</span>
+          </div>
+          <div class="sensor-reading temp-color">
+            <strong id="temp-value">--</strong><span>°C</span>
+          </div>
+        </div>
+
+        <div class="sensor-card humi-card">
+          <div class="sensor-card-top">
+            <div class="sensor-icon-badge humi-badge">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+                <path d="M9.5 14.5a3.5 3.5 0 0 0 2.5 2.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round" fill="none"/>
+              </svg>
+            </div>
+            <span class="sensor-label">Độ ẩm</span>
+          </div>
+          <div class="sensor-reading humi-color">
+            <strong id="humi-value">--</strong><span>%</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. THẺ ĐỒ THỊ BIẾN THIÊN (ĐỒNG BỘ TONE SÁNG) -->
+      <section class="analytics-card" id="analytics-section">
+        <div class="analytics-header">
+          <div>
+            <h2 class="analytics-title">Biểu đồ theo dõi</h2>
+            <p class="analytics-subtitle" id="limits-text">Ngưỡng tự động: ≥ 30.0°C · ≤ 60.0%</p>
+          </div>
+          <span class="point-chip" id="point-count">0 điểm</span>
+        </div>
+
+        <div class="analytics-avg-bar">
+          <span class="avg-label">Trung bình gần nhất:</span>
+          <div class="avg-values">
+            <strong class="temp-color" id="avg-temp">--°C</strong>
+            <span class="dot-sep">·</span>
+            <strong class="humi-color" id="avg-humi">--%</strong>
+          </div>
+        </div>
+
+        <!-- Đồ thị Nhiệt độ -->
+        <div class="sparkline-box">
+          <div class="sparkline-head">
+            <span>Nhiệt độ (10 lần đo)</span>
+            <span class="sparkline-range">
+              <span id="temp-min-label">--°</span> – <strong class="temp-color" id="temp-max-label">--°</strong>
+            </span>
+          </div>
+          <div class="sparkline-canvas" id="temp-sparkline"></div>
+        </div>
+
+        <!-- Đồ thị Độ ẩm -->
+        <div class="sparkline-box">
+          <div class="sparkline-head">
+            <span>Độ ẩm (10 lần đo)</span>
+            <span class="sparkline-range">
+              <span id="humi-min-label">--%</span> – <strong class="humi-color" id="humi-max-label">--%</strong>
+            </span>
+          </div>
+          <div class="sparkline-canvas" id="humi-sparkline"></div>
+        </div>
+
+        <div class="analytics-footer">
+          <span id="oldest-time-label">Trước đó</span>
+          <span id="newest-time-label">Mới nhất</span>
+        </div>
+      </section>
+      
+  <!-- 5. CỤM ĐIỀU KHIỂN CHẾ ĐỘ & HẸN GIỜ -->
+      <section class="controls-panel">
+        <div class="mode-grid">
+          <button type="button" class="ctrl-btn btn-auto" data-mode="auto">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            <span>Tự động</span>
+          </button>
+
+          <button type="button" class="ctrl-btn btn-cool" data-mode="manual">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"></path>
+            </svg>
+            <span>Làm mát</span>
+          </button>
+        </div>
+
+        <div class="secondary-actions">
+          <button type="button" class="ctrl-btn btn-timer" id="btn-timer">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+              <path d="M3 3v5h5"></path>
+              <path d="M12 7v5l3 2"></path>
+            </svg>
+            <span class="timer-btn-label">
+              <span>Hẹn giờ mỗi ngày</span>
+              <small id="timer-badge-text" class="timer-sub-badge hidden">06:30 - 07:00</small>
+            </span>
+          </button>
+
+          <button type="button" class="ctrl-btn btn-off active" data-mode="off" aria-label="Tắt máy bơm">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+              <line x1="12" y1="2" x2="12" y2="12"></line>
+            </svg>
+            <span>Tắt</span>
+          </button>
+        </div>
+      </section>
+    </main>
+  </div>
+  <!-- 6. POPUP CÀI ĐẶT HẸN GIỜ MỖI NGÀY -->
+  <div class="modal-backdrop hidden" id="timer-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-card">
+      <button type="button" class="modal-close-btn" id="btn-close-modal" aria-label="Đóng">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+
+      <div class="modal-header">
+        <div class="alarm-badge">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="13" r="8"></circle>
+            <path d="M12 9v4l2.5 1.5"></path>
+            <path d="M5 3L2 6"></path>
+            <path d="M22 6l-3-3"></path>
+          </svg>
+        </div>
+        <h2 id="modal-title">Hẹn giờ mỗi ngày</h2>
+      </div>
+
+      <p class="modal-desc">Cài đặt khung giờ tự động bật máy bơm hàng ngày</p>
+
+      <div class="time-picker-row">
+        <span class="picker-label">Giờ bắt đầu</span>
+        <div class="spinners-group">
+          <div class="spinner-box active" data-field="startHour">
+            <button type="button" class="spin-arrow up" aria-label="Tăng giờ bắt đầu">▲</button>
+            <div class="spin-digit" id="start-hour">06</div>
+            <button type="button" class="spin-arrow down" aria-label="Giảm giờ bắt đầu">▼</button>
+          </div>
+          <span class="colon-sep">:</span>
+          <div class="spinner-box" data-field="startMin">
+            <button type="button" class="spin-arrow up" aria-label="Tăng phút bắt đầu">▲</button>
+            <div class="spin-digit" id="start-min">30</div>
+            <button type="button" class="spin-arrow down" aria-label="Giảm phút bắt đầu">▼</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="time-picker-row">
+        <span class="picker-label">Giờ kết thúc</span>
+        <div class="spinners-group">
+          <div class="spinner-box" data-field="endHour">
+            <button type="button" class="spin-arrow up" aria-label="Tăng giờ kết thúc">▲</button>
+            <div class="spin-digit" id="end-hour">07</div>
+            <button type="button" class="spin-arrow down" aria-label="Giảm giờ kết thúc">▼</button>
+          </div>
+          <span class="colon-sep">:</span>
+          <div class="spinner-box" data-field="endMin">
+            <button type="button" class="spin-arrow up" aria-label="Tăng phút kết thúc">▲</button>
+            <div class="spin-digit" id="end-min">00</div>
+            <button type="button" class="spin-arrow down" aria-label="Giảm phút kết thúc">▼</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="toggle-row">
+        <span class="picker-label">Kích hoạt hẹn giờ</span>
+        <label class="ios-switch">
+          <input type="checkbox" id="timer-enabled" checked />
+          <span class="ios-slider"></span>
+        </label>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="modal-btn btn-cancel" id="btn-cancel-timer">Hủy</button>
+        <button type="button" class="modal-btn btn-save" id="btn-save-timer">Lưu cài đặt</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
