@@ -1,4 +1,4 @@
-﻿const CACHE_NAME = 'nong-trai-pwa-v2';
+const CACHE_NAME = 'nong-trai-pwa-v4';
 
 // Danh sách các file tĩnh cần pre-cache
 const ASSETS_TO_CACHE = [
@@ -6,6 +6,7 @@ const ASSETS_TO_CACHE = [
   './index.html',
   './style.css',
   './script.js',
+  './firebase-config.js',
   './manifest.json',
   './icon-192.png',
   './icon-512.png'
@@ -43,8 +44,8 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Không cache các yêu cầu API dữ liệu tới Supabase hoặc các phương thức POST/PUT
-  if (url.hostname.includes('supabase.co') || event.request.method !== 'GET') {
+  // Bỏ qua Firebase API/auth và mọi phương thức ghi
+  if (url.hostname.endsWith('.firebaseio.com') || url.hostname.endsWith('.firebasedatabase.app') || url.hostname.includes('googleapis.com') || event.request.method !== 'GET') {
     return;
   }
 

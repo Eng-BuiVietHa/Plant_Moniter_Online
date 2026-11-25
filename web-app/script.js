@@ -1,22 +1,32 @@
-// ============================================================
-// 1. CẤU HÌNH KẾT NỐI SUPABASE (Điền thông tin Project của bạn)
-// ============================================================
-const SUPABASE_URL = "https://YOUR_PROJECT_ID.supabase.co";
-const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+import { firebaseConfig } from "./firebase-config.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-app.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-auth.js";
+import {
+  getDatabase,
+  ref,
+  update,
+  onValue,
+  query,
+  orderByChild,
+  limitToLast,
+  runTransaction,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/13.3.0/firebase-database.js";
 
-const isDemoMode = SUPABASE_URL.includes("YOUR_PROJECT_ID")
-  || SUPABASE_ANON_KEY.includes("YOUR_SUPABASE_ANON_KEY")
-  || !window.supabase;
-const supabaseClient = !isDemoMode
-  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-  : null;
+const firebaseConfigured = Object.values(firebaseConfig).every(
+  (value) => value && !value.includes("YOUR_")
+);
+const isDemoMode = !firebaseConfigured;
+const firebaseApp = firebaseConfigured ? initializeApp(firebaseConfig) : null;
+const firebaseAuth = firebaseApp ? getAuth(firebaseApp) : null;
+const firebaseDatabase = firebaseApp ? getDatabase(firebaseApp) : null;
 
 document.addEventListener("DOMContentLoaded", () => {
   const state = {
     mode: "off", // 'auto' | 'manual' | 'off'
     relayOn: false,
     tempThreshold: 30.0,
-    humiThreshold: 60.0,
+    humiThreshold: 45.0,
     timer: {
       startHour: 6,
       startMin: 30,
@@ -224,7 +234,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ============================================================
-  // 6. GỬI LỆNH LÊN SUPABASE
+  // 6. GỬI LỆNH LÊN FIREBASE
   // ============================================================
   async function updateDeviceStateOnCloud(patch) {
     if (isDemoMode) {
@@ -236,14 +246,14 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const { error } = await supabaseClient
-      .from("device_state")
-      .update({ ...patch, updated_at: new Date().toISOString() })
-      .eq("id", 1);
-
-    if (error) {
-      console.error("Lỗi cập nhật Supabase:", error);
-      setConnectionStatus(false, "Lỗi đồng bộ");
+    try {
+      await update(ref(firebaseDatabase, "device_state"), {
+        ...patch,
+        updated_at: serverTimestamp()
+      });
+    } catch (error) {
+      console.error("Lỗi cập nhật Firebase:", error);
+      setConnectionStatus(false, "Lỗi đồng bộ Firebase");
     }
   }
 
@@ -272,7 +282,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ============================================================
-  // 7. ĐỒNG BỘ DỮ LIỆU REALTIME TỪ SUPABASE
+  // 7. ĐỒNG BỘ DỮ LIỆU REALTIME TỪ FIREBASE
   // ============================================================
   function applyRemoteStateRow(row) {
     if (!row) return;
@@ -298,7 +308,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function initCloudSync() {
     if (isDemoMode) {
-      setConnectionStatus(true, "Bản xem thử");
+      setConnectionStatus(true, "Bản xem thử · chưa cấu hình Firebase");
       state.logs = [
         { temperature: 29.8, humidity: 72.8 },
         { temperature: 30.0, humidity: 73.5 },
@@ -316,56 +326,66 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const { data: stateData, error: stateErr } = await supabaseClient
-      .from("device_state")
-      .select("*")
-      .eq("id", 1)
-      .single();
+    try {
+      await signInAnonymously(firebaseAuth);
+      const stateRef = ref(firebaseDatabase, "device_state");
+      const defaultState = {
+        mode: "off",
+        relay_on: false,
+        temp_threshold: 30,
+        humi_threshold: 45,
+        control_config_version: 2,
+        timer_enabled: false,
+        start_time: "06:30",
+        end_time: "07:00"
+      };
 
-    if (stateErr) {
-      setConnectionStatus(false, "Mất kết nối");
-    } else {
-      setConnectionStatus(true, "Đã kết nối");
-      applyRemoteStateRow(stateData);
-    }
+      await runTransaction(stateRef, (current) => {
+        const existing = current && typeof current === "object" ? current : {};
+        const next = { ...defaultState, ...existing };
+        const currentConfigVersion = Number(existing.control_config_version || 0);
 
-    const { data: logsData } = await supabaseClient
-      .from("sensor_logs")
-      .select("temperature, humidity, created_at")
-      .order("created_at", { ascending: false })
-      .limit(10);
-
-    if (logsData && logsData.length > 0) {
-      state.logs = logsData.reverse();
-      renderAnalyticsUI();
-    }
-
-    supabaseClient
-      .channel("nong-trai-realtime")
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "device_state", filter: "id=eq.1" },
-        (payload) => {
-          setConnectionStatus(true, "Đã kết nối");
-          applyRemoteStateRow(payload.new);
+        // Migrate the previous default threshold once; preserve later user edits.
+        if (currentConfigVersion < 2 && Number(existing.humi_threshold) === 60) {
+          next.humi_threshold = 45;
         }
-      )
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "sensor_logs" },
-        (payload) => {
-          setConnectionStatus(true, "Đã kết nối");
-          state.logs.push(payload.new);
-          if (state.logs.length > 10) state.logs.shift();
-          renderAnalyticsUI();
+        next.control_config_version = 2;
+        return next;
+      }, { applyLocally: false });
+
+      onValue(stateRef, (snapshot) => {
+        const row = snapshot.val();
+        if (row) {
+          applyRemoteStateRow(row);
+          setConnectionStatus(true, "Đã kết nối Firebase");
         }
-      )
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED") setConnectionStatus(true, "Đã kết nối");
-        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          setConnectionStatus(false, "Mất kết nối");
-        }
+      }, (error) => {
+        console.error("Lỗi đọc device_state từ Firebase:", error);
+        setConnectionStatus(false, "Lỗi đọc Firebase");
       });
+
+      const logsQuery = query(
+        ref(firebaseDatabase, "sensor_logs"),
+        orderByChild("created_at"),
+        limitToLast(10)
+      );
+      onValue(logsQuery, (snapshot) => {
+        const logs = [];
+        snapshot.forEach((child) => {
+          logs.push({ id: child.key, ...child.val() });
+        });
+        logs.sort((a, b) => Number(a.created_at || 0) - Number(b.created_at || 0));
+        state.logs = logs;
+        renderAnalyticsUI();
+        setConnectionStatus(true, "Đã kết nối Firebase");
+      }, (error) => {
+        console.error("Lỗi đọc sensor_logs từ Firebase:", error);
+        setConnectionStatus(false, "Lỗi đọc Firebase");
+      });
+    } catch (error) {
+      console.error("Không thể khởi tạo Firebase:", error);
+      setConnectionStatus(false, "Lỗi kết nối Firebase");
+    }
   }
 
   initCloudSync();

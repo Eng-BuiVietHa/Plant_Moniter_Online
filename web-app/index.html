@@ -14,8 +14,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 
-  <!-- Thư viện Supabase JS v2 -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <!-- Khung ScrollView mượt toàn ứng dụng -->
@@ -120,7 +118,7 @@
         <div class="analytics-header">
           <div>
             <h2 class="analytics-title">Biểu đồ theo dõi</h2>
-            <p class="analytics-subtitle" id="limits-text">Ngưỡng tự động: ≥ 30.0°C · ≤ 60.0%</p>
+            <p class="analytics-subtitle" id="limits-text">Ngưỡng tự động: ≥ 30.0°C · ≤ 45.0%</p>
           </div>
           <span class="point-chip" id="point-count">0 điểm</span>
         </div>
@@ -278,6 +276,6 @@
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <script type="module" src="script.js"></script>
 </body>
 </html>
