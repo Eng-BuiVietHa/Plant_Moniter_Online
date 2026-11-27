@@ -141,8 +141,8 @@ Realtime Database lưu dữ liệu dạng cây JSON, nên không cần tạo b�
 ### 3. Điền cấu hình Firebase
 
 - Firmware: sao chép `include/secrets.example.h` thành `include/secrets.h`, rồi điền Wi-Fi, Firebase Web API Key và Realtime Database URL.
-- Web: điền `apiKey`, `authDomain`, `databaseURL`, `projectId` và `appId` trong `web-app/firebase-config.js`. Nếu file chưa có, sao chép từ file mẫu.
-- Chỉ `include/secrets.h` bị `.gitignore` loại khỏi Git vì chứa mật khẩu Wi-Fi. `firebase-config.js` chứa cấu hình client Firebase công khai và cần được đưa vào bản deploy web; tuyệt đối không đặt mật khẩu Wi-Fi hoặc service account/private key vào file này. Dùng cùng một Firebase project.
+- Web: cấu hình `apiKey`, `authDomain`, `databaseURL`, `projectId` và `appId` trong `web-app/firebase-config.js`. File này sẽ nằm trong repo riêng tư cùng project.
+- Firebase Web API key và các trường cấu hình client vẫn được gửi tới trình duyệt khi chạy web. Quyền truy cập dữ liệu phải được bảo vệ bằng Realtime Database Rules. Không đặt mật khẩu Wi-Fi hoặc service account/private key trong cấu hình web. Dùng cùng một Firebase project cho firmware và web.
 
 Firmware gọi Firebase Auth REST để đăng nhập ẩn danh và tự làm mới token. Token làm mới được lưu trong NVS của ESP32.
 
@@ -161,10 +161,16 @@ Pin được cấu hình trong code: DHT11 ở GPIO 4, relay ở GPIO 18.
 
 ### Chạy web app
 
-1. Điền cấu hình ứng dụng Web Firebase trong `web-app/firebase-config.js`; nếu thiếu file, sao chép file mẫu trước.
+1. Điền cấu hình ứng dụng Web Firebase trong `web-app/firebase-config.js`; nếu thiếu file, sao chép `firebase-config.example.js` vào `web-app` trước.
 2. Phục vụ thư mục web-app qua máy chủ web cục bộ (ví dụ Live Server) hoặc deploy HTTPS.
 3. Mở trang trong trình duyệt. Để cài PWA, chọn Install app/Add to Home Screen nếu trình duyệt hỗ trợ.
 4. Đăng nhập ẩn danh phải được bật trong Firebase Authentication; RTDB sẽ tự gửi cập nhật realtime cho web.
+
+### Deploy web app lên Vercel
+
+1. Import repo GitHub riêng tư vào Vercel.
+2. Đặt **Root Directory** là `web-app` và **Framework Preset** là `Other`.
+3. Để trống Build Command; thư mục này là web tĩnh và có `index.html` ở gốc.
 
 Không mở trực tiếp bằng file://; service worker cần localhost hoặc HTTPS. PWA có thể mở giao diện đã cache offline nhưng không thể đọc/ghi Firebase khi mất mạng.
 

@@ -1,20 +1,38 @@
-{ "name": "Nông Trại Thông Minh", 
-"short_name": "Nông Trại", 
-"description": "Hệ thống giám sát nhiệt độ, độ ẩm và điều khiển máy bơm tưới cây IoT thời gian thực", 
-"start_url": "./index.html", 
-"display": "standalone", 
-"orientation": "portrait", 
-"background_color": "#ebf7ef", 
-"theme_color": "#ebf7ef", 
-"lang": "vi", 
-"icons": [ { 
-    "src": "icon-192.png", 
-    "sizes": "192x192", 
-    "type": "image/png", 
-    "purpose": "any" }, 
-{ 
-    "src": "icon-512.png", 
-    "sizes": "512x512", 
-    "type": "image/png", 
-    "purpose": "maskable" 
-} ] }
+{
+  "id": "./index.html",
+  "name": "Plant Moniter",
+  "short_name": "Plant Moniter",
+  "description": "Hệ thống giám sát nhiệt độ, độ ẩm và điều khiển máy bơm tưới cây IoT thời gian thực",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ebf7ef",
+  "theme_color": "#ebf7ef",
+  "lang": "vi",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
